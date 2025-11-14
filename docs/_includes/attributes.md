@@ -168,6 +168,16 @@ Serde does not allow this attribute to be set on containers, but this is allowed
 
 If the given type has any required generic type parameters, then they must all be explicitly specified in this attribute. Serde frequently allows you to omit them as it can make use of type inference, but unfortunately this is not possible with Schemars. For example, `with = "Vec::<i32>"` will work, but `with = "Vec"` and `with = "Vec::<_>"` will not.
 
+If you are using `#[serde(with = "...")]` purely for (de)serialization but do **not** want Schemars to treat the `with` module as the field's schema type, you can opt out on a per-field basis with:
+
+```rust
+#[serde(with = "my_module")]
+#[schemars(ignore_serde_with)]
+field: ActualType,
+```
+
+In this case, Schemars will ignore the serde `with` when choosing the schema type for `field`, unless you also provide an explicit `#[schemars(with = "...")]` / `#[schemars(schema_with = "...")]`.
+
 Serde docs: [from](https://serde.rs/container-attrs.html#from) / [try_from](https://serde.rs/container-attrs.html#try_from)
 
 <h3 id="from">
