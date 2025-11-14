@@ -283,12 +283,16 @@ impl FieldAttrs {
                 }
 
                 match self.with {
-                    Some(WithAttr::Type(_)) => cx.duplicate_error(&meta),
-                    Some(WithAttr::Function(_)) => cx.mutual_exclusive_error(&meta, "schema_with"),
+                    Some(WithAttr::Type(_)) => {
+                        cx.duplicate_error(&meta);
+                    }
+                    Some(WithAttr::Function(_)) => {
+                        cx.mutual_exclusive_error(&meta, "schema_with");
+                    }
                     None => {
                         self.with = parse_name_value_lit_str(meta, cx).ok().map(WithAttr::Type);
                     }
-                };
+                }
             }
             "schema_with" if cx.attr_type == "schemars" => match self.with {
                 Some(WithAttr::Function(_)) => cx.duplicate_error(&meta),

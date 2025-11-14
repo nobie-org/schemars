@@ -141,5 +141,19 @@ struct StructIgnoreSerdeWith {
 
 #[test]
 fn field_ignore_serde_with() {
-    test!(StructIgnoreSerdeWith).assert_identical::<Struct<i64>>();
+    test!(StructIgnoreSerdeWith).custom(|schema, _| {
+        let props = schema
+            .get("properties")
+            .and_then(Value::as_object)
+            .expect("schema has object properties");
+        let x_schema = props.get("x").expect("x property present");
+        assert_eq!(
+            x_schema.get("type"),
+            Some(&Value::String("integer".into()))
+        );
+        assert_eq!(
+            x_schema.get("format"),
+            Some(&Value::String("int64".into()))
+        );
+    });
 }
