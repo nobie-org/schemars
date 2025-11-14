@@ -37,6 +37,7 @@ pub struct CommonAttrs {
 pub struct FieldAttrs {
     pub common: CommonAttrs,
     pub with: Option<WithAttr>,
+    pub ignore_serde_with: bool,
     pub validation: ValidationAttrs,
 }
 
@@ -268,11 +269,27 @@ impl FieldAttrs {
         cx: &AttrCtxt,
     ) -> Result<(), CustomMeta> {
         match meta_name {
-            "with" => match self.with {
+            "ignore_serde_with" if cx.attr_type == "schemars" => {
+                self.ignore_serde_with = true;
+            }
+            "with" if cx.attr_type == "schemars" => match self.with {
                 Some(WithAttr::Type(_)) => cx.duplicate_error(&meta),
                 Some(WithAttr::Function(_)) => cx.mutual_exclusive_error(&meta, "schema_with"),
                 None => self.with = parse_name_value_lit_str(meta, cx).ok().map(WithAttr::Type),
             },
+            "with" => {
+                if self.ignore_serde_with {
+                    return Ok(());
+                }
+
+                match self.with {
+                    Some(WithAttr::Type(_)) => cx.duplicate_error(&meta),
+                    Some(WithAttr::Function(_)) => cx.mutual_exclusive_error(&meta, "schema_with"),
+                    None => {
+                        self.with = parse_name_value_lit_str(meta, cx).ok().map(WithAttr::Type);
+                    }
+                };
+            }
             "schema_with" if cx.attr_type == "schemars" => match self.with {
                 Some(WithAttr::Function(_)) => cx.duplicate_error(&meta),
                 Some(WithAttr::Type(_)) => cx.mutual_exclusive_error(&meta, "with"),
@@ -294,6 +311,7 @@ impl FieldAttrs {
             self,
             Self {
                 common,
+                ignore_serde_with: false,
                 validation,
                 with: None,
             } if common.is_default() && validation.is_default())

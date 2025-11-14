@@ -111,3 +111,35 @@ fn container_schema_with() {
             assert_eq!(schema, expected);
         });
 }
+
+mod serde_only_with_mod {
+    pub(super) fn serialize<S, T>(value: &T, ser: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+        T: std::fmt::Display,
+    {
+        ser.collect_str(value)
+    }
+
+    pub(super) fn deserialize<'de, D, T>(deser: D) -> Result<T, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+        T: std::str::FromStr<Err = std::num::ParseIntError>,
+    {
+        <&str as serde::Deserialize>::deserialize(deser)?
+            .parse()
+            .map_err(serde::de::Error::custom)
+    }
+}
+
+#[derive(JsonSchema, Deserialize, Serialize)]
+struct StructIgnoreSerdeWith {
+    #[serde(with = "serde_only_with_mod")]
+    #[schemars(ignore_serde_with)]
+    x: i64,
+}
+
+#[test]
+fn field_ignore_serde_with() {
+    test!(StructIgnoreSerdeWith).assert_identical::<Struct<i64>>();
+}
